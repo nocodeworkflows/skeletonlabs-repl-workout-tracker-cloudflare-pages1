@@ -26,17 +26,18 @@ export async function login(email: string, password: string) {
 }
 
 export async function register(email: string, password: string, passwordConfirm: string) {
-    const user = await pb.collection('users').create(
-        {
-            email,
-            password,
-            passwordConfirm,
-        },
-        {
-            requireVerification: true, // Ensure verification email is sent
-        }
-    );
-    return user; // Do not auto-login until the user verifies their email
+    // Step 1: Create the user
+    const user = await pb.collection('users').create({
+        email,
+        emailVisibility: true, // Make the email publicly visible if needed
+        password,
+        passwordConfirm,
+    });
+
+    // Step 2: Request email verification
+    await pb.collection('users').requestVerification(email);
+
+    return user;
 }
 
 
