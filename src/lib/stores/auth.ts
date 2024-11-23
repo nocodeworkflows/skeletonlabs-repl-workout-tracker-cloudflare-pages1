@@ -10,20 +10,35 @@ pb.authStore.onChange((auth) => {
 });
 
 export async function login(email: string, password: string) {
-    const authData = await pb.collection('users').authWithPassword(email, password);
-    currentUser.set(authData.record);
-    return authData;
+    try {
+        const authData = await pb.collection('users').authWithPassword(email, password);
+
+        if (!authData.record.verified) {
+            throw new Error('Please verify your email before logging in.');
+        }
+
+        currentUser.set(authData.record);
+        return authData;
+    } catch (e: any) {
+        console.error('Login error:', e);
+        throw e;
+    }
 }
 
 export async function register(email: string, password: string, passwordConfirm: string) {
-    const user = await pb.collection('users').create({
-        email,
-        password,
-        passwordConfirm,
-    });
-    await login(email, password);
-    return user;
+    const user = await pb.collection('users').create(
+        {
+            email,
+            password,
+            passwordConfirm,
+        },
+        {
+            requireVerification: true, // Ensure verification email is sent
+        }
+    );
+    return user; // Do not auto-login until the user verifies their email
 }
+
 
 export async function logout() {
     pb.authStore.clear();
